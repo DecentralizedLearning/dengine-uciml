@@ -3,10 +3,12 @@ dataset:
     target: uci_har_us
     arguments:
       train: true
+      class_balance: false
   test:
     target: uci_har_us
     arguments:
       train: false
+      class_balance: false
 
 client:
   target: CentralizedClient
