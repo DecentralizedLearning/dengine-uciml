@@ -4,7 +4,7 @@ import dengine_uciml
 
 
 def get_config(name: str, default_path: str = ""):
-    target = Path(sys.prefix) / f'share/d_uciml/configs/{name}'
+    target = Path(sys.prefix) / f'share/dengine-uciml/configs/{name}'
     if target.exists():
         return target
 
