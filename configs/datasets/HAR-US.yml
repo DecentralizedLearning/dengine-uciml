@@ -24,3 +24,8 @@ client:
       validation_batch_size: 128
   local_model:
     target: UCI_HAR_US_Net
+
+partitioning:
+  target: har_us_partition_by_subject
+  arguments:
+    validation_percentage: .2
