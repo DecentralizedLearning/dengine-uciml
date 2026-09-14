@@ -70,6 +70,8 @@ DECENTRALIZED_CONFIG_OVERRIDES = {
     "client.training_engine.arguments.validation_batch_size": 32,
     "client.training_engine.arguments.training_batch_size": 32,
     "partitioning.arguments.validation_percentage": 0.1,
+    # Topology
+    "graph.arguments.n": 21,
 }
 
 
@@ -87,7 +89,7 @@ WIDE_RESNET = {
 VIT = {"client.local_model.target": "ViT"}
 
 
-def load_centralized_cifar10(
+def load_centralized_har_us(
     simulation_args: SimulationArguments,
     debug: bool = False
 ):
@@ -99,7 +101,7 @@ def load_centralized_cifar10(
         load_experiment_from_yamls(
             files=[*CENTRALIZED_CONFIGS],
             overrides=convert_to_nested_dict({
-                "name": "cifar10,Centralized",
+                "name": "har_us,Centralized",
                 **CENTRALIZED_CONFIG_OVERRIDES,
                 **debug_argument,
             }),
@@ -109,7 +111,7 @@ def load_centralized_cifar10(
     ]
 
 
-def load_cifar10_decentralized(
+def load_har_us_decentralized(
     simulation_args: SimulationArguments,
     config_overrides,
     debug: bool = False
@@ -123,7 +125,7 @@ def load_cifar10_decentralized(
         load_experiment_from_yamls(
             files=[*DECENTRALIZED_BA_CONFIGS],
             overrides=convert_to_nested_dict({
-                "name": "cifar10,BA,DecAvg",
+                "name": "har_us,BA,DecAvg",
                 "graph.arguments.seed": simulation_args.seed,
                 **config_overrides,
                 **debug_argument
@@ -134,7 +136,7 @@ def load_cifar10_decentralized(
         load_experiment_from_yamls(
             files=[*DECENTRALIZED_ER_CONFIGS],
             overrides=convert_to_nested_dict({
-                "name": "cifar10,ER,DecAvg",
+                "name": "har_us,ER,DecAvg",
                 "graph.arguments.seed": simulation_args.seed,
                 **config_overrides,
                 **debug_argument
@@ -145,7 +147,7 @@ def load_cifar10_decentralized(
         load_experiment_from_yamls(
             files=[*FEDERATED_CONFIGS],
             overrides=convert_to_nested_dict({
-                "name": "cifar10,FedAvg",
+                "name": "har_us,FedAvg",
                 **config_overrides,
                 **debug_argument
             }),
@@ -200,8 +202,8 @@ def main():
     configurations = []
     try:
         configurations += [
-            *load_centralized_cifar10(simulation_args, debug=extra_arguments.debug),
-            *load_cifar10_decentralized(simulation_args, debug=extra_arguments.debug, config_overrides=DECENTRALIZED_CONFIG_OVERRIDES),
+            *load_centralized_har_us(simulation_args, debug=extra_arguments.debug),
+            *load_har_us_decentralized(simulation_args, debug=extra_arguments.debug, config_overrides=DECENTRALIZED_CONFIG_OVERRIDES),
         ]
     except ValidationError as e:
         print("\n❌ Failed to parse the configuration due to the following validation errors: ")
