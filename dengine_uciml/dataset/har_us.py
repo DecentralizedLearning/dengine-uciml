@@ -25,16 +25,47 @@ def load_openml_uci_har_us(
     subset_fraction: float = 1,
     *args, **kwargs
 ) -> SupervisedDataset:
-    """https://www.openml.org/search?type=data&sort=runs&id=1478&status=active"""
-    har: List[np.ndarray] = fetch_openml(
+    """Load the UCI Human Activity Recognition dataset via OpenML (ID: 1478).
+
+    Unlike the official archive, this loader pools all data and applies a custom
+    stratified 70/30 train/test split (`random_state=42`). Consequently, samples
+    from all 30 subjects are mixed and distributed across both train and test sets,
+    breaking the subject-independent partitioning of the original benchmark.
+
+    Parameters
+    ----------
+    train : bool
+        If True, returns the 70% training split; otherwise, returns the 30% test split.
+    output_path : str
+        Directory to store the downloaded OpenML cache.
+    target_labels : List[int], default=[]
+        Specific activity class labels (0-indexed) to keep. If empty, all classes are retained.
+    class_balance : bool, default=True
+        Whether to balance the number of samples per class.
+    subset_fraction : float, default=1.0
+        Fraction of the split data to load (0 < subset_fraction <= 1).
+    *args, **kwargs
+        Additional arguments passed to the loader.
+
+    Returns
+    -------
+    SupervisedDataset
+        Dataset containing the feature tensors, 0-indexed targets, and subject IDs.
+
+    References
+    ----------
+    https://www.openml.org/search?type=data&sort=runs&id=1478&status=active
+    """
+    har = fetch_openml(
         data_id=1478,
         data_home=output_path,
-        as_frame=False,
+        as_frame=True,
         parser='auto',
-        return_X_y=True,
+        return_X_y=False,
     )  # type: ignore
-    X, y = har
-    y_int = y.astype(np.int64) - 1
+    subject_ids = har.frame["subject"].to_numpy().astype(np.int64)
+    y_int = har.frame["Class"].to_numpy().astype(np.int64) - 1
+    X = har.frame.drop(columns=["subject", "Class"]).to_numpy()
 
     # Standard UCI-HAR train/test split (70% train, 30% test)
     X_train, X_test, y_train, y_test = train_test_split(
@@ -54,6 +85,7 @@ def load_openml_uci_har_us(
         data=data_tensor,
         targets=targets_tensor,
         transform=None,
+        subjects=subject_ids
     )
 
     if class_balance:
@@ -137,12 +169,13 @@ def _download_and_extract(output_path: str) -> str:
     return data_dir
 
 
-def _load_split(data_dir: str, split: str) -> tuple[np.ndarray, np.ndarray]:
+def _load_split(data_dir: str, split: str) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Load the X/y arrays for 'train' or 'test' from the extracted dataset."""
     split_dir = os.path.join(data_dir, split)
     X = np.loadtxt(os.path.join(split_dir, f"X_{split}.txt"))
     y = np.loadtxt(os.path.join(split_dir, f"y_{split}.txt"))
-    return X, y
+    subject = np.loadtxt(os.path.join(split_dir, f"subject_{split}.txt"))
+    return X, y, subject
 
 
 @register_dataset('uci_har_us')
@@ -154,25 +187,59 @@ def load_uci_har_us(
     subset_fraction: float = 1,
     *args, **kwargs
 ) -> SupervisedDataset:
-    """https://archive.ics.uci.edu/dataset/240/human+activity+recognition+using+smartphones"""
+    """Load the official UCI Human Activity Recognition dataset from the UCI ML Archive.
+
+    Preserves the official benchmark's subject-independent train/test partition:
+    only 21 of the 30 volunteers appear in the training split, while the remaining
+    9 subjects are strictly reserved for the test split. The raw archive is downloaded
+    and extracted from the UCI static repository directly.
+
+    Parameters
+    ----------
+    train : bool
+        If True, loads the official 'train' partition (21 subjects); otherwise, loads
+        the official 'test' partition (9 subjects).
+    output_path : str
+        Directory where the archive is downloaded and unzipped.
+    target_labels : List[int], default=[]
+        Specific activity class labels (0-indexed) to keep. If empty, all classes are retained.
+    class_balance : bool, default=True
+        Whether to balance the number of samples per class.
+    subset_fraction : float, default=1.0
+        Fraction of the split data to load (0 < subset_fraction <= 1).
+    *args, **kwargs
+        Additional arguments passed to the loader.
+
+    Returns
+    -------
+    SupervisedDataset
+        Dataset containing the feature tensors, 0-indexed targets, and 0-indexed subject IDs.
+
+    References
+    ----------
+    https://archive.ics.uci.edu/dataset/240/human+activity+recognition+using+smartphones
+    """
     data_dir = _download_and_extract(output_path)
 
     split = "train" if train else "test"
-    X, y = _load_split(data_dir, split)
+    X, y, subject = _load_split(data_dir, split)
 
     # UCI-HAR labels are 1-indexed
     y_int = y.astype(np.int64) - 1
+    subject_int = subject.astype(np.int64) - 1
 
     assert 0 < subset_fraction <= 1
     end = int(len(X) * subset_fraction)
 
     data_tensor = torch.as_tensor(X[:end], dtype=torch.float32)
     targets_tensor = torch.as_tensor(y_int[:end], dtype=torch.int64)
+    subjects_tensor = torch.as_tensor(subject_int[:end], dtype=torch.int64)
 
     dataset = SupervisedDataset(
         data=data_tensor,
         targets=targets_tensor,
         transform=None,
+        subjects=subjects_tensor
     )
 
     if class_balance:
