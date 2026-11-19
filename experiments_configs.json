@@ -2,7 +2,7 @@
   {
     "EXPERIMENT_VERSION": "1",
     "target": null,
-    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine.UCI/logs",
+    "experiments_directory_root": "/home/samuele/DecentralizedLearning/dengine-uciml/logs",
     "name": "har_us,Centralized",
     "seed": 123,
     "dataset": {
@@ -46,7 +46,7 @@
         "target": "TrainingEngine",
         "arguments": {
           "optimizer": "SGD",
-          "epochs": 1500,
+          "epochs": 100,
           "lr": 0.001,
           "sgd_momentum": 0.9,
           "training_batch_size": 32,
@@ -63,7 +63,7 @@
   {
     "EXPERIMENT_VERSION": "1",
     "target": null,
-    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine.UCI/logs",
+    "experiments_directory_root": "/home/samuele/DecentralizedLearning/dengine-uciml/logs",
     "name": "har_us,BA,DecAvg",
     "seed": 123,
     "dataset": {
@@ -86,7 +86,7 @@
     "partitioning": {
       "target": "har_us_partition_by_subject",
       "arguments": {
-        "validation_percentage": 0.1
+        "validation_percentage": 0.2
       }
     },
     "graph": {
@@ -108,21 +108,17 @@
     "client": {
       "target": "DecAvgClient",
       "arguments": {
-        "include_myself": true,
         "use_weighted_avg": true
       },
       "training_engine": {
         "target": "TrainingEngine",
         "arguments": {
-          "optimizer": "Adam",
+          "optimizer": "SGD",
           "epochs": 5,
-          "lr": 0.0003,
+          "lr": 0.001,
           "sgd_momentum": 0.9,
           "training_batch_size": 32,
-          "validation_batch_size": 32,
-          "adam_weight_decay": 0.001,
-          "scheduler": "cosine",
-          "patience": 5
+          "validation_batch_size": 128
         }
       },
       "local_model": {
@@ -135,7 +131,7 @@
   {
     "EXPERIMENT_VERSION": "1",
     "target": null,
-    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine.UCI/logs",
+    "experiments_directory_root": "/home/samuele/DecentralizedLearning/dengine-uciml/logs",
     "name": "har_us,ER,DecAvg",
     "seed": 123,
     "dataset": {
@@ -158,7 +154,7 @@
     "partitioning": {
       "target": "har_us_partition_by_subject",
       "arguments": {
-        "validation_percentage": 0.1
+        "validation_percentage": 0.2
       }
     },
     "graph": {
@@ -180,21 +176,17 @@
     "client": {
       "target": "DecAvgClient",
       "arguments": {
-        "include_myself": true,
         "use_weighted_avg": true
       },
       "training_engine": {
         "target": "TrainingEngine",
         "arguments": {
-          "optimizer": "Adam",
+          "optimizer": "SGD",
           "epochs": 5,
-          "lr": 0.0003,
+          "lr": 0.001,
           "sgd_momentum": 0.9,
           "training_batch_size": 32,
-          "validation_batch_size": 32,
-          "adam_weight_decay": 0.001,
-          "scheduler": "cosine",
-          "patience": 5
+          "validation_batch_size": 128
         }
       },
       "local_model": {
@@ -207,7 +199,7 @@
   {
     "EXPERIMENT_VERSION": "1",
     "target": null,
-    "experiments_directory_root": "/home/samuele.sabella/Desktop/DecentralizedLearning/dEngine.UCI/logs",
+    "experiments_directory_root": "/home/samuele/DecentralizedLearning/dengine-uciml/logs",
     "name": "har_us,FedAvg",
     "seed": 123,
     "dataset": {
@@ -230,41 +222,36 @@
     "partitioning": {
       "target": "har_us_partition_by_subject",
       "arguments": {
-        "validation_percentage": 0.1
+        "validation_percentage": 0.2
       }
     },
     "graph": {
       "target": "NXGraph",
       "arguments": {
-        "nx_class": "star_graph",
+        "nx_class": "complete_graph",
         "n": 21
       }
     },
     "scenario": {
-      "target": "VanillaDecentralizedSynch",
+      "target": "VanillaFederatedScenario",
       "arguments": {
-        "common_init": true,
-        "max_communication_rounds": 200
+        "max_communication_rounds": 200,
+        "use_weighted_avg": true,
+        "common_init": true
       }
     },
     "client": {
-      "target": "DecAvgClient",
-      "arguments": {
-        "include_myself": true,
-        "use_weighted_avg": true
-      },
+      "target": "FederatedClient",
+      "arguments": null,
       "training_engine": {
         "target": "TrainingEngine",
         "arguments": {
-          "optimizer": "Adam",
+          "optimizer": "SGD",
           "epochs": 5,
-          "lr": 0.0003,
+          "lr": 0.001,
           "sgd_momentum": 0.9,
           "training_batch_size": 32,
-          "validation_batch_size": 32,
-          "adam_weight_decay": 0.001,
-          "scheduler": "cosine",
-          "patience": 5
+          "validation_batch_size": 128
         }
       },
       "local_model": {
