@@ -16,94 +16,28 @@ from dengine.config.utils import convert_to_nested_dict
 from dengine import load_experiment_from_yamls
 from dengine.bin.simulation import load_engine
 from dengine.scenarios.decentralized import DecAvgClient
+from dengine.scenarios.federated import FederatedClient
 from dengine.scenarios.centralized import CentralizedClient
 
 from dengine_uciml.configs.builtins import BUILTINS as uci_BUILTINS
 
 
-# ..... ..... ..... ..... ..... ..... ..... ..... #
-# SCENARIOS
-# ..... ..... ..... ..... ..... ..... ..... ..... #
-FEDERATED_CONFIGS = [
-    BUILTINS.CORE.SCENARIOS.DECENTRALIZED_HOMOGENOUS,
-    BUILTINS.CORE.GRAPH.STAR_51,
-    BUILTINS.CORE.PARTITIONING.NONIID,
-    uci_BUILTINS.DATASETS.HAR_US,
-]
-DECENTRALIZED_BA_CONFIGS = [
-    BUILTINS.CORE.SCENARIOS.DECENTRALIZED_HOMOGENOUS,
-    BUILTINS.CORE.GRAPH.BA_MEDIUM,
-    BUILTINS.CORE.PARTITIONING.NONIID,
-    uci_BUILTINS.DATASETS.HAR_US,
-]
-DECENTRALIZED_ER_CONFIGS = [
-    BUILTINS.CORE.SCENARIOS.DECENTRALIZED_HOMOGENOUS,
-    BUILTINS.CORE.GRAPH.ER_MEDIUM,
-    BUILTINS.CORE.PARTITIONING.NONIID,
-    uci_BUILTINS.DATASETS.HAR_US,
-]
-CENTRALIZED_CONFIGS = [
-    BUILTINS.CORE.GRAPH.CENTRALIZED,
-    BUILTINS.CORE.SCENARIOS.CENTRALIZED,
-    BUILTINS.CORE.PARTITIONING.IID,
-    uci_BUILTINS.DATASETS.HAR_US,
-]
-
-CENTRALIZED_CONFIG_OVERRIDES = {
-    "client.target": CentralizedClient.__name__,
-    "client.training_engine.arguments.epochs": 1500,
-}
-DECENTRALIZED_CONFIG_OVERRIDES = {
-    "client.target": DecAvgClient.__name__,
-    # Aggregation and Scenario
-    "scenario.arguments.common_init": True,
-    "client.arguments.include_myself": True,
-    "client.arguments.use_weighted_avg": True,
-    "scenario.arguments.max_communication_rounds": 200,
-    # Training Engine
-    "client.training_engine.arguments.optimizer": "Adam",
-    "client.training_engine.arguments.lr": 0.0003,
-    "client.training_engine.arguments.adam_weight_decay": 0.001,
-    "client.training_engine.arguments.scheduler": "cosine",
-    "client.training_engine.arguments.patience": 5,
-    "client.training_engine.arguments.epochs": 5,
-    "client.training_engine.arguments.validation_batch_size": 32,
-    "client.training_engine.arguments.training_batch_size": 32,
-    "partitioning.arguments.validation_percentage": 0.1,
-    # Topology
-    "graph.arguments.n": 21,
-}
-
-
-# ..... ..... ..... ..... ..... ..... ..... ..... #
-# ARCHITECTURE
-# ..... ..... ..... ..... ..... ..... ..... ..... #
-TINY_CNN = {"client.local_model.target": "TinyCNN"}
-MOBILE_VNET = {"client.local_model.target": "MobileNetV3Classifier"}
-WIDE_RESNET = {
-    "client.local_model.target": "WideResNetClassifier",
-    "client.local_model.arguments.depth": 10,
-    "client.local_model.arguments.dropout": 0.3,
-    "client.local_model.arguments.widen_factor": 5,
-}
-VIT = {"client.local_model.target": "ViT"}
-
-
 def load_centralized_har_us(
     simulation_args: SimulationArguments,
-    debug: bool = False
+    config_overrides,
 ):
-    debug_argument = {
-        "client.arguments.debug_skip_training": True,
-        "client.arguments.debug_skip_test": True
-    } if debug else {}
     return [
         load_experiment_from_yamls(
-            files=[*CENTRALIZED_CONFIGS],
+            files=[
+                BUILTINS.CORE.GRAPH.CENTRALIZED_GRAPH,
+                BUILTINS.CORE.SCENARIOS.CENTRALIZED,
+                uci_BUILTINS.DATASETS.HAR_US,
+            ],
             overrides=convert_to_nested_dict({
                 "name": "har_us,Centralized",
-                **CENTRALIZED_CONFIG_OVERRIDES,
-                **debug_argument,
+                "client.target": CentralizedClient,
+                "client.training_engine.arguments.epochs": 100,
+                **config_overrides,
             }),
             experiments_directory_root=str(simulation_args.output_directory.absolute()),
             seed=simulation_args.seed,
@@ -114,42 +48,53 @@ def load_centralized_har_us(
 def load_har_us_decentralized(
     simulation_args: SimulationArguments,
     config_overrides,
-    debug: bool = False
 ):
-    debug_argument = {
-        "client.arguments.debug_skip_training": True,
-        "client.arguments.debug_skip_test": True
-    } if debug else {}
-
     return [
         load_experiment_from_yamls(
-            files=[*DECENTRALIZED_BA_CONFIGS],
+            files=[
+                BUILTINS.CORE.SCENARIOS.DECENTRALIZED_HOMOGENOUS,
+                BUILTINS.CORE.GRAPH.BA_MEDIUM,
+                uci_BUILTINS.DATASETS.HAR_US,
+            ],
             overrides=convert_to_nested_dict({
                 "name": "har_us,BA,DecAvg",
+                "client.target": DecAvgClient,
+                "graph.arguments.n": 21,
                 "graph.arguments.seed": simulation_args.seed,
+                "client.arguments.use_weighted_avg": True,
                 **config_overrides,
-                **debug_argument
             }),
             experiments_directory_root=str(simulation_args.output_directory.absolute()),
             seed=simulation_args.seed,
         ),
         load_experiment_from_yamls(
-            files=[*DECENTRALIZED_ER_CONFIGS],
+            files=[
+                BUILTINS.CORE.SCENARIOS.DECENTRALIZED_HOMOGENOUS,
+                BUILTINS.CORE.GRAPH.ER_MEDIUM,
+                uci_BUILTINS.DATASETS.HAR_US,
+            ],
             overrides=convert_to_nested_dict({
                 "name": "har_us,ER,DecAvg",
+                "client.target": DecAvgClient,
+                "graph.arguments.n": 21,
                 "graph.arguments.seed": simulation_args.seed,
+                "client.arguments.use_weighted_avg": True,
                 **config_overrides,
-                **debug_argument
             }),
             experiments_directory_root=str(simulation_args.output_directory.absolute()),
             seed=simulation_args.seed,
         ),
         load_experiment_from_yamls(
-            files=[*FEDERATED_CONFIGS],
+            files=[
+                BUILTINS.CORE.SCENARIOS.FEDERATED,
+                BUILTINS.CORE.GRAPH.COMPLETE_GRAPH_MEDIUM,  # Topology is totally ignored in federated scenario
+                uci_BUILTINS.DATASETS.HAR_US,
+            ],
             overrides=convert_to_nested_dict({
                 "name": "har_us,FedAvg",
+                "client.target": FederatedClient,
+                "graph.arguments.n": 21,
                 **config_overrides,
-                **debug_argument
             }),
             experiments_directory_root=str(simulation_args.output_directory.absolute()),
             seed=simulation_args.seed,
@@ -179,7 +124,7 @@ def _run_config(
 def main():
     parser = ArgumentParser()
     parser.add_argument(
-        "--concurrent-runs",
+        "--concurrent_runs",
         type=int,
         default=1,
         help="Number of configurations to run in parallel (default: 1)."
@@ -192,6 +137,12 @@ def main():
         help="Filter experiments names with a regex."
     )
     parser.add_argument(
+        "--num_parallel_clients",
+        type=int,
+        default=1,
+        help="Number of clients to run in parallel in each simulation (default: 1)."
+    )
+    parser.add_argument(
         "--debug",
         action="store_true",
         help="Sets the argument client.arguments.debug_skip_training=true"
@@ -199,11 +150,25 @@ def main():
     simulation_args, _ = cli_argument_parser(parser)
     extra_arguments = parser.parse_args()
 
+    parallelism_override = {}
+    if extra_arguments.num_parallel_clients > 1:
+        parallelism_override = {
+            "scenario.arguments.num_parallel_clients": extra_arguments.num_parallel_clients,
+        }
+    debug_overrides = {}
+    if extra_arguments.debug:
+        debug_overrides = {
+            "client.arguments.debug_skip_training": True,
+            "client.arguments.debug_skip_test": True
+        }
+
     configurations = []
     try:
         configurations += [
-            *load_centralized_har_us(simulation_args, debug=extra_arguments.debug),
-            *load_har_us_decentralized(simulation_args, debug=extra_arguments.debug, config_overrides=DECENTRALIZED_CONFIG_OVERRIDES),
+            *load_centralized_har_us(simulation_args, config_overrides=debug_overrides),
+            *load_har_us_decentralized(
+                simulation_args,
+                config_overrides={**parallelism_override, **debug_overrides}),
         ]
     except ValidationError as e:
         print("\n❌ Failed to parse the configuration due to the following validation errors: ")
