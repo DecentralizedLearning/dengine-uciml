@@ -57,3 +57,16 @@ A fully working example is provided in `main.py`. The important steps:
    ```
 
 Because `uci_BUILTINS.DATASETS.HAR_US` already ships a `client.local_model` and `client.training_engine` block, you don't need to redefine those unless you want to override them (e.g. switching `client.target` to `DecAvgClient` for decentralized runs, as `main.py` does).
+
+
+> [!TIP]
+> **Faster training on GPU:** set these before running.
+>
+> ```bash
+> export TORCH_CUDNN_BENCHMARK=True
+> export TORCH_CUDNN_DETERMINISTIC=False
+> ```
+>
+> Results will no longer be bit-for-bit reproducible between runs.
+>
+> Run with `export PYTHON_GIL=0 python ... --num_parallel_clients 50`
